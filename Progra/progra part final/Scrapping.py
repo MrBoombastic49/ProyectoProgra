@@ -9,30 +9,24 @@ from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import pandas as pd
 
-# Función para realizar el web scraping
 def obtener_datos_mercadolibre(paginas):
-    # Configuración del navegador
     s = Service(ChromeDriverManager().install())
     opciones = Options()
     opciones.add_argument("--window-size=1024,1200")
     navegador = webdriver.Chrome(service=s, options=opciones)
 
-    # Ir a la página de listado de laptops
     url = "https://listado.mercadolibre.com.mx/laptops"
     navegador.get(url)
     time.sleep(5)
 
-    # Inicialización de datos
     datos = {"titulo": [], "precio": [], "precio_anterior": [], "descuento": [], "calificacion": [], "num_reviews": [], "colores_disponibles": []}
 
     for pagina in range(paginas):
         time.sleep(3)
 
-        # Hacer scroll hacia abajo para cargar más contenido
         navegador.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(3)
 
-        # Espera explícita para asegurarse de que los productos se han cargado
         try:
             WebDriverWait(navegador, 10).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "ui-search-result__wrapper"))
@@ -41,10 +35,8 @@ def obtener_datos_mercadolibre(paginas):
             print(f"Error al cargar la página {pagina + 1}.")
             break
 
-        # Obtener el HTML de la página actual
         soup = BeautifulSoup(navegador.page_source, 'html.parser')
 
-        # Buscar los elementos de producto
         productos = soup.find_all("div", class_="poly-card poly-card--list")
         print(f"Productos encontrados en la página {pagina + 1}: {len(productos)}")
 
@@ -95,7 +87,7 @@ def obtener_datos_mercadolibre(paginas):
             if colores_disponibles_container:
                 colores_disponibles = colores_disponibles_container.text.strip().split()[-2]
 
-            # Añadir los datos al diccionario
+
             datos["titulo"].append(titulo)
             datos["precio"].append(precio)
             datos["precio_anterior"].append(precio_anterior)
@@ -104,7 +96,7 @@ def obtener_datos_mercadolibre(paginas):
             datos["num_reviews"].append(num_reviews)
             datos["colores_disponibles"].append(colores_disponibles)
 
-        # Intentar hacer clic en el botón de 'Siguiente' para avanzar de página
+
         try:
             # Asegurarse de que el botón siguiente esté visible y se pueda hacer clic
             WebDriverWait(navegador, 10).until(
@@ -118,18 +110,14 @@ def obtener_datos_mercadolibre(paginas):
             print("No se encontró el botón de 'Siguiente'. Fin del scraping.")
             break
 
-    # Cerrar navegador
     navegador.quit()
 
-    # Verificar y guardar datos
     if datos["titulo"] and datos["precio"]:
         df = pd.DataFrame(datos)
 
-        # Guardar el archivo CSV sucio (sin limpiar aún)
         df.to_csv("C:/Users/aaron/PycharmProjects/ProyectoFinal/Datasets/productos_mercadolibre_sucio.csv", index=False)
         print("Datos guardados en productos_mercadolibre_sucio.csv")
     else:
         print("No se encontraron datos para guardar.")
 
-# Ejecutar el scraping y almacenar los datos en un CSV sucio
 obtener_datos_mercadolibre(6)
